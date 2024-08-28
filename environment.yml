@@ -1,0 +1,8 @@
+name: DGPcourse
+
+dependencies:
+  - python
+  - numpy
+  - matplotlib
+  - pandas
+  - plotly

@@ -1,0 +1,5 @@
+L low = 2.93 L target = 3.66 L high = 4.89, foldover = 0.35, sliver = True
+before
+std. deviation edge len: 3.18, std. deviation face area: 8.59, relative mean area error: 0.69
+after 5 iters
+std. deviation edge len: 0.82, std. deviation face area: 3.40, relative mean area error: 0.35
