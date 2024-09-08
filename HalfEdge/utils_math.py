@@ -35,36 +35,23 @@ def get_vectors(vertices):
     return np.vstack([v0v1, v0v2]) 
 
 def get_lengths(vertices):
-    # vertices is (3,3) float64 ndarray, each row a vertex,
-    # returns (3,) float64 the lengths of the edges
-    a = np.linalg.norm(vertices[1] - vertices[0])
-    b = np.linalg.norm(vertices[2] - vertices[1])
-    c = np.linalg.norm(vertices[0] - vertices[2])
-    return np.array([a,b,c])
+    # Vectorized calculation of edge lengths
+    diff = vertices - np.roll(vertices, shift=-1, axis=0)
+    return np.linalg.norm(diff, axis=1)
 
-def get_area(vertices):
-    # vertices is (3,3) float64 ndarray, each row a vertex,
-    # returns the area of the triangle, using heron's formula
-    lengths = get_lengths(vertices) # (3,)
+def get_area(vertices, lengths=None):
+    if lengths is None:
+        lengths = get_lengths(vertices)
     s = np.sum(lengths) / 2
-    # fix for numerical stability
-    mask = np.isclose(s, lengths) # fix rounding issue.
-    aux = np.where(mask, 0., s-lengths) # TODO check
-    return np.sqrt(s*np.prod(aux))
+    # Improved numerical stability handling
+    aux = np.maximum(s - lengths, 0)  # Avoid negative values due to numerical issues
+    return np.sqrt(s * np.prod(aux))
 
 def get_compactness(vertices):
-    # vertices is (3,3) float64 ndarray, each row a vertex,
-    # returns how much the triangle is close to an equilateral triangle
-    # let L be perimeter, A the area,
-    # the isoperimetric inequality promises that L^2 >= 4 * pi * A
-    # TODO not sure about formula, look at
-    # maybe answer in https://math.berkeley.edu/~wu/HSI1.pdf
-    # if the value is 1, the triangle is equilateral
-    # if the value is 0, the triangle is degenerate
-    lengths = get_lengths(vertices) # (3,)
-    triangle_area = get_area(vertices) # float64, for isoceles is equal to (sqrt(3)/4) * side**2
+    lengths = get_lengths(vertices)
+    triangle_area = get_area(vertices, lengths)
     numerator = 4 * np.sqrt(3) * triangle_area
-    denom = np.linalg.norm(lengths)**2
+    denom = np.sum(lengths)**2  # Directly sum lengths and square
     return numerator / denom
 
 def get_normal(vertices, normalize=True):
