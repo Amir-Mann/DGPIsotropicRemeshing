@@ -281,10 +281,7 @@ class HalfEdgeTriMesh:
     
     def valence(self, h_index:int):
       with timing_manager("half_edge.valence"):
-        # return number of edges that leave source vertex
-        h = self.half_edges[h_index]  # TODO debug
-        v0_one_ring = list(self.one_ring(h_index))
-        return len(v0_one_ring)
+        return len(list(self.one_ring(h_index)))
     
     def adjacent_half_edges(self, h_index:int):
       with timing_manager("half_edge.adjacent_half_edges"):

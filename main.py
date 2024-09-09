@@ -1,4 +1,5 @@
 import os
+import argparse
 import numpy as np
 import time
 from HalfEdge.half_edge import HalfEdgeTriMesh
@@ -188,15 +189,14 @@ class IsotropicRemesher:
 
             if self.has_collinear_edges(h0_index):
                 continue 
-
+            
+            # RUNTIME NOTE: We can calculate if the valance helps without fliping twice, which I'm pretty sure would be quicker.
             # Compute normals before flip
             if foldover > 0: normals_pre = ( self.model.normal(h0_index), self.model.normal(h3_index) )
 
             if sliver: deviation_compactness_pre = self.compactness_deviation(h0_index)
 
             deviation_valence_pre = self.valence_deviation(h0_index)
-            
-            # todo 
 
             is_he0_bdry = he0.face == -1 or self.model.half_edges[h3_index].face == -1
             if is_he0_bdry:
@@ -327,32 +327,61 @@ class IsotropicRemesher:
         # return sum([abs(self.model.valence(i)-6) for i in self.model.adjacent_half_edges(h_index)])
         return sum([abs(h1_valence-6), abs(h2_valence-6), abs(h4_valence-6), abs(h5_valence-6)])
 
+def main():
+    parser = argparse.ArgumentParser(description="Run isotropic remeshing on a model.")
+    
+    # Adding command-line arguments
+    parser.add_argument("model_name", type=str, help="Path to the model file (e.g., .obj, .json, .off)\nmodels: " + '"hex_grid_uv_03_ccw.obj", "sample2.json", "iphi_bad10k.off", "wolf_head.obj", "hex_grid_3D.json"')
+    parser.add_argument("--no_sliver", action='store_true', help="Whether to allow sliver triangles (default: Allow)")
+    parser.add_argument("--foldover", type=float, default=np.pi/9, help="Foldover angle threshold (default: pi/9)")
+    parser.add_argument("--num_iters", type=int, default=5, help="Number of iterations for remeshing (default: 5)")
+    parser.add_argument("--L_factor", type=float, default=0.9, help="Factor for computing target edge length (default: 0.9)")
+    
+    # Optional flags for additional functionality
+    parser.add_argument("--save_stats", action='store_true', help="Save statistics before and after remeshing.")
+    parser.add_argument("--visualize", action='store_true', help="Visualize the mesh after remeshing.")
+    parser.add_argument("--save_to_obj", action='store_true', help="Save remeshed model to .obj format.")
 
-if __name__=="__main__":
-    # model_name = "hex_grid_uv_03_ccw.obj"
-    # model_name = "sample2.json"
-    # model_name = "iphi_bad10k.off"
-    model_name = "wolf_head.obj"
-    # model_name = "hex_grid_3D.json"
-    he_trimesh = HalfEdgeTriMesh.from_model_path(model_name)
-    # he_trimesh.visualize(v_labels=False, e_labels=False, f_labels=False)
-    # L = he_trimesh.get_percentile_edge_length(0.1)
-    L = 0.9 *he_trimesh.get_average_edge_length()
-    L_low, L_high = 4/5.*L, 4/3.*L
-    
-    sliver = True
-    foldover=np.pi/9
-    num_iters=5
-    run_stats= f'L low = {L_low:.2f} L target = {L:.2f} L high = {L_high:.2f}, foldover = {foldover:.2f}, sliver = {sliver}'
-    
-    #utils_he.save_stats(he_trimesh, prefix="before", rewrite=True, extra=run_stats)
-    
+    # Parse arguments
+    args = parser.parse_args()
+
+    # Load model
+    he_trimesh = HalfEdgeTriMesh.from_model_path(args.model_name)
+
+    # Compute L based on average edge length
+    L = args.L_factor * he_trimesh.get_average_edge_length()
+    L_low, L_high = 4 / 5. * L, 4 / 3. * L
+
+    # Run statistics
+    run_stats = f'L low = {L_low:.2f}, L target = {L:.2f}, L high = {L_high:.2f}, foldover = {args.foldover:.2f}, sliver = {not args.no_sliver}'
+
+    # Save stats before remeshing if flag is enabled
+    if args.save_stats:
+        # Uncomment when save_stats function is available
+        # save_stats(he_trimesh, prefix="before", rewrite=True, extra=run_stats)
+        print(f"Saving stats before remeshing: {run_stats}")
+
+    # Remeshing process
     remesher = IsotropicRemesher(he_trimesh)
     with time_without_stack("remeshing"):
-        remesher.isotropic_remeshing(L=L, num_iters=num_iters, foldover=foldover, sliver=sliver)
-    print_time_statistics()
-    #utils_he.save_stats(he_trimesh, prefix=f"after {num_iters} iters", rewrite=False)
+        remesher.isotropic_remeshing(L=L, num_iters=args.num_iters, foldover=args.foldover, sliver=not args.no_sliver)
     
-    #he_trimesh.visualize(v_labels=False, e_labels=False, f_labels=False)
-    #remesher.visualize()
-    #remesher.model.save_to_obj(open_in_meshlab=True)
+    # Save stats after remeshing if flag is enabled
+    if args.save_stats:
+        # Uncomment when save_stats function is available
+        # save_stats(he_trimesh, prefix=f"after {args.num_iters} iters", rewrite=False)
+        print(f"Saving stats after {args.num_iters} iterations of remeshing.")
+
+    # Print time statistics
+    print_time_statistics()
+
+    # Visualize if flag is enabled
+    if args.visualize:
+        remesher.visualize()
+
+    # Save to .obj if flag is enabled
+    if args.save_to_obj:
+        remesher.model.save_to_obj(open_in_meshlab=True)
+
+if __name__ == "__main__":
+    main()
