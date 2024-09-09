@@ -17,7 +17,6 @@ def print_time_statistics(verbose=True):
     global _global_timing_keys
     if verbose:
         print(json.dumps(_global_times_dict))
-    print("\n\n\n")
     if len(_global_timing_stack) != 0:
         print(f"Warning: bug in the timing utils, the stack at statistics printing time {time.time()}:\n" + str(_global_timing_stack))
     

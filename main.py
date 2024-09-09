@@ -118,7 +118,7 @@ class IsotropicRemesher:
             h3_index = self.half_edges[h0_index].twin
 
             if h0_index > h3_index:
-                continue
+               continue
 
             if h0_index in self.model.unreferenced_half_edges:
                 continue
@@ -182,15 +182,14 @@ class IsotropicRemesher:
             if self.has_collinear_edges(h0_index):
                 continue 
             
-            # RUNTIME NOTE: We can calculate if the valance helps without fliping twice, which I'm pretty sure would be quicker.
+            deviation_gap = self.model.valence(h0_index) + self.model.valence(h3_index) - self.model.valence(h2_index) - self.model.valence(h5_index)
+            if deviation_gap < 2:
+                continue
+
             # Compute normals before flip
             if foldover > 0: normals_pre = ( self.model.normal(h0_index), self.model.normal(h3_index) )
 
             if sliver: deviation_compactness_pre = self.compactness_deviation(h0_index)
-
-            deviation_gap = self.model.valence(h0_index) + self.model.valence(h3_index) - self.model.valence(h2_index) - self.model.valence(h5_index)
-            if deviation_gap < 2:
-               continue
 
             self.model.edge_flip(h0_index)
             
@@ -234,9 +233,7 @@ class IsotropicRemesher:
             if v_index in self.model.unreferenced_vertices:
                 continue
 
-            
             self.tangential_smoothing(h_index, lambda_)
-            
             skip.add(v_index)
 
         # return new_vertices
@@ -350,14 +347,14 @@ def main():
     with time_without_stack("remeshing"):
         remesher.isotropic_remeshing(L=L, num_iters=args.num_iters, foldover=args.foldover, sliver=not args.no_sliver)
     
+    # Print time statistics
+    print_time_statistics(verbose=args.verbose_timing)
+
     # Save stats after remeshing if flag is enabled
     if args.save_stats:
         # Uncomment when save_stats function is available
         utils_he.save_stats(he_trimesh, prefix=f"after {args.num_iters} iters", rewrite=False)
         print(f"Saving stats after {args.num_iters} iterations of remeshing.")
-
-    # Print time statistics
-    print_time_statistics(verbose=args.verbose_timing)
 
     # Visualize if flag is enabled
     if args.visualize:

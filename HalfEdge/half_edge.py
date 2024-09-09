@@ -1,5 +1,5 @@
 import os
-from typing import List, Union
+from typing import List
 import numpy as np
 import numpy.typing as npt
 import HalfEdge.utils_load as utils_load
@@ -50,9 +50,10 @@ class HalfEdgeTriMesh:
         self.V = V # np (#verts,3) float64
         self.F = F # np (#faces,3) int32
         self.n_vertices = len(V)
-        self.unreferenced_vertices = []
-        self.unreferenced_faces = []
-        self.unreferenced_half_edges = []
+        self.unreferenced_vertices = set()
+        self.unreferenced_faces = set()
+        self.unreferenced_half_edges = set()
+        self.last_collapse = None
         self.model_name = model_name
         self.last_v0_pos = np.array([0,0,0])
         
@@ -562,10 +563,10 @@ class HalfEdgeTriMesh:
         self.V = np.vstack([self.V, v4])
 
         # save unreferenced half edges
-        self.unreferenced_half_edges.extend([h0_index, h3_index])
+        self.unreferenced_half_edges.update({h0_index, h3_index})
 
         # save unreferenced triangles
-        self.unreferenced_faces.extend([t0_index, t1_index])
+        self.unreferenced_faces.update({t0_index, t1_index})
       
     def edge_split_boundary(self, h0_index:int):
       with timing_manager("half_edge.edge_split_boundary"):
@@ -684,10 +685,10 @@ class HalfEdgeTriMesh:
         self.V = np.vstack([self.V, v4])
         
         # save unreferenced half edges
-        self.unreferenced_half_edges.extend([h0_index, h3_index])
+        self.unreferenced_half_edges.update({h0_index, h3_index})
         
         # save unreferenced triangles
-        self.unreferenced_faces.extend([t0_index])  
+        self.unreferenced_faces.update({t0_index})  
         
         # update next on boundary
         v2_ring = self.one_ring(h11_index)
@@ -804,22 +805,20 @@ class HalfEdgeTriMesh:
         # all updates beside twin are redundant, happen in loop, but for clarity
         self.update_half_edge(h8_index, twin=h7_index, vertex_indices=[v0_index, v3_index], source_bdry=is_v0_bdry)
 
+        self.last_collapse = (h0_index, h1_index, h2_index, h3_index, h4_index, h5_index, t0_index, t1_index, v1_index)
         # save unreferenced half edges
-        self.unreferenced_half_edges.extend([h0_index, h1_index, h2_index, h3_index, h4_index, h5_index])
+        self.unreferenced_half_edges.update({h0_index, h1_index, h2_index, h3_index, h4_index, h5_index})
         # save unreferenced triangles
-        self.unreferenced_faces.extend([t0_index, t1_index])
+        self.unreferenced_faces.update({t0_index, t1_index})
         # save unreferenced vertex
-        self.unreferenced_vertices.extend([v1_index])
+        self.unreferenced_vertices.add(v1_index)
         return p_ring 
     
     def revert_edge_collapse(self, p_ring:list):
       with timing_manager("half_edge.revert_edge_collapse"):
         # p_ring contains all half edges that have v1 as source, except h1 and h3
-        # get data 
-        h5_index = self.unreferenced_half_edges[-1]
-        h4_index = self.unreferenced_half_edges[-2]
-        h2_index = self.unreferenced_half_edges[-4]
-        h1_index = self.unreferenced_half_edges[-5]
+        # get data
+        h0_index, h1_index, h2_index, h3_index, h4_index, h5_index, t0_index, t1_index, v1_index = self.last_collapse
 
         h6_index = self.half_edges[h2_index].twin
         h7_index = self.half_edges[h4_index].twin
@@ -858,13 +857,19 @@ class HalfEdgeTriMesh:
         self.update_half_edge(h8_index, twin=h5_index, vertex_indices=[v1_index, v3_index], source_bdry=is_v1_bdry)
 
         # remove unreferenced half edges
-        self.unreferenced_half_edges = self.unreferenced_half_edges[:-6]
+        self.unreferenced_half_edges.remove(h0_index)
+        self.unreferenced_half_edges.remove(h1_index)
+        self.unreferenced_half_edges.remove(h2_index)
+        self.unreferenced_half_edges.remove(h3_index)
+        self.unreferenced_half_edges.remove(h4_index)
+        self.unreferenced_half_edges.remove(h5_index)
 
         # remove unreferenced triangles
-        self.unreferenced_faces = self.unreferenced_faces[:-2]
+        self.unreferenced_faces.remove(t0_index)
+        self.unreferenced_faces.remove(t1_index)
 
         # remove unreferenced vertices
-        self.unreferenced_vertices.pop()
+        self.unreferenced_vertices.remove(v1_index)
 
 # if __name__=="__main__":
 #     from utils_load import *
