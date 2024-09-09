@@ -27,7 +27,7 @@ class HalfEdge:
             vertex_indices = list(vertex_indices)
         self.vertex_indices = vertex_indices
     def __repr__(self) -> str:
-      with timing_manager("half_edge.__repr__"):
+        #with timing_manager("half_edge.__repr__"):
         source_bdry_str = 'B' if self.source_bdry else 'I' # boundary or interior
         target_bdry_str = 'B' if self.target_bdry else 'I'
         return f"HE{self.idx}({source_bdry_str}{self.vertex_indices}{target_bdry_str}),twin={self.twin},next={self.next},face={self.face}"
@@ -37,7 +37,7 @@ class HalfEdgeTriMesh:
     ############ SETUP ############
     @classmethod
     def from_model_path(cls, model_path: str):
-      with timing_manager("half_edge.from_model_path"):
+        #with timing_manager("half_edge.from_model_path"):
         V,F, model_name = utils_load.get_np_V_F(model_path)
         return cls(V,F, model_name=model_name)
     
@@ -105,7 +105,7 @@ class HalfEdgeTriMesh:
                 self.half_edges[he_ring.twin].target_bdry = True
 
     def __iter__(self):
-      with timing_manager("half_edge.__iter__"):
+        #with timing_manager("half_edge.__iter__"):
         # iterate over referenced(!) edges(!) not half edges
         skip = set()
         E = len(self.half_edges)
@@ -120,20 +120,20 @@ class HalfEdgeTriMesh:
             yield h_index
     
     def visualize(self, wireframe:bool = True, v_labels:bool=True, e_labels:bool=True, f_labels:bool=True):
-      with timing_manager("half_edge.visualize"):
+        #with timing_manager("half_edge.visualize"):
         vis_he_trimesh(self, wireframe=wireframe, v_labels=v_labels, e_labels=e_labels, f_labels=f_labels)
     
     ############ Half Edges ############
             
     def create_half_edge(self, next:int=-1, face:int=-1, twin:int=-1, vertex_indices:list=[-1, -1], source_bdry:bool=False, target_bdry:bool=False):
-      with timing_manager("half_edge.create_half_edge"):
+        #with timing_manager("half_edge.create_half_edge"):
         he_idx = len(self.half_edges)
         h = HalfEdge(idx=he_idx, next=next, face=face, twin=twin, vertex_indices=vertex_indices, source_bdry=source_bdry, target_bdry=target_bdry)
         self.half_edges.append(h)
         return h
     
     def update_half_edge(self, h_index:int, next = None, face = None, twin = None, vertex_indices = None, source_bdry = None, target_bdry = None):
-      with timing_manager("half_edge.update_half_edge"):
+        #with timing_manager("half_edge.update_half_edge"):
         he = self.half_edges[h_index]
         if next is not None: he.next = next
         if face is not None: he.face = face
@@ -143,7 +143,7 @@ class HalfEdgeTriMesh:
         if target_bdry is not None: he.target_bdry = target_bdry
         
     def save_to_obj(self, open_in_meshlab=False):
-      with timing_manager("half_edge.save_to_obj"):
+        #with timing_manager("half_edge.save_to_obj"):
         obj_path = utils_load.save_to_obj(self)
         if open_in_meshlab:
             os.system(f"meshlab {obj_path} > /dev/null 2>&1")
@@ -151,12 +151,12 @@ class HalfEdgeTriMesh:
     ############ GETTERS ############
     
     def is_he_boundary(self, h_index):
-      with timing_manager("half_edge.is_he_boundary"):
+        #with timing_manager("half_edge.is_he_boundary"):
         twin_index = self.half_edges[h_index].twin
         return self.half_edges[h_index].face==-1 or self.half_edges[twin_index].face==-1
     
     def is_he_collapsible(self, h_index):
-      with timing_manager("half_edge.is_he_collapsible"):
+        #with timing_manager("half_edge.is_he_collapsible"):
         # an halfedge isn't collapsible if it's boundary, or both of its vertices are boundary
         he = self.half_edges[h_index]
         if (he.source_bdry and he.target_bdry):
@@ -175,50 +175,50 @@ class HalfEdgeTriMesh:
         # check for geometry, as in https://stackoverflow.com/a/27049418/4399305
 
     def get_face_midpoint(self, t_idx):
-      with timing_manager("half_edge.get_face_midpoint"):
+        #with timing_manager("half_edge.get_face_midpoint"):
         indices = self.F[t_idx]
         vertices_t = self.V[indices]
         return np.mean(vertices_t, axis=0)
     
     def get_start_vertex_by_edge(self, h_index:int):
-      with timing_manager("half_edge.get_start_vertex_by_edge"):
+        #with timing_manager("half_edge.get_start_vertex_by_edge"):
         v0_index = self.half_edges[h_index].vertex_indices[0]
         return self.V[v0_index]
     
     def get_end_vertex_by_edge(self, h_index:int):
-      with timing_manager("half_edge.get_end_vertex_by_edge"):
+        #with timing_manager("half_edge.get_end_vertex_by_edge"):
         v1_index = self.half_edges[h_index].vertex_indices[1]
         return self.V[v1_index]
     
     def get_vertices_by_edge(self, h_index):
-      with timing_manager("half_edge.get_vertices_by_edge"):
+        #with timing_manager("half_edge.get_vertices_by_edge"):
         indices = self.half_edges[h_index].vertex_indices
         return self.V[indices]
     
     def edge_len(self, h_index):
-      with timing_manager("half_edge.edge_len"):
+        #with timing_manager("half_edge.edge_len"):
         vertices = self.get_vertices_by_edge(h_index)
         return np.linalg.norm(vertices[0]-vertices[1])
     
     def num_half_edges(self, clean:bool = False):
-      with timing_manager("half_edge.num_half_edges"):
+        #with timing_manager("half_edge.num_half_edges"):
         return len(self.half_edges) - len(self.unreferenced_half_edges) if clean else len(self.half_edges)
     
     def num_vertices(self, clean:bool = False):
-      with timing_manager("half_edge.num_vertices"):
+        #with timing_manager("half_edge.num_vertices"):
         return len(self.V) - len(self.unreferenced_vertices) if clean else len(self.V)
     
     def num_faces(self, clean:bool = False):
-      with timing_manager("half_edge.num_faces"):
+        #with timing_manager("half_edge.num_faces"):
         return len(self.F) - len(self.unreferenced_faces) if clean else len(self.F)
     
     def get_edge_midpoint(self, h_index):
-      with timing_manager("half_edge.get_edge_midpoint"):
+        #with timing_manager("half_edge.get_edge_midpoint"):
         vertices = self.get_vertices_by_edge(h_index)
         return np.mean(vertices, axis=0)
     
     def get_vertices(self):
-      with timing_manager("half_edge.get_vertices"):
+        #with timing_manager("half_edge.get_vertices"):
         # get referenced vertices
         referenced_vertices_d= dict() # map int to (3,) float64
         for v_idx in range(0, len(self.V)):
@@ -228,7 +228,7 @@ class HalfEdgeTriMesh:
         return referenced_vertices_d
     
     def get_edges_midpoints(self):
-      with timing_manager("half_edge.get_edges_midpoints"):
+        #with timing_manager("half_edge.get_edges_midpoints"):
         E = len(self.half_edges)
         seen_edges = set()
         midpoints_d = dict()
@@ -242,7 +242,7 @@ class HalfEdgeTriMesh:
         return midpoints_d
     
     def get_faces_midpoints(self):
-      with timing_manager("half_edge.get_faces_midpoints"):
+        #with timing_manager("half_edge.get_faces_midpoints"):
         F = len(self.F)
         midpoints_d = dict()
         for t_idx in range(F):
@@ -252,7 +252,7 @@ class HalfEdgeTriMesh:
         return midpoints_d
     
     def get_average_edge_length(self):
-      with timing_manager("half_edge.get_average_edge_length"):
+        #with timing_manager("half_edge.get_average_edge_length"):
         total_length = 0
         num_edges = 0 # not half edges
         for edge_index in self:
@@ -261,14 +261,14 @@ class HalfEdgeTriMesh:
         return total_length/num_edges
     
     def get_percentile_edge_length(self, percentile:float):
-      with timing_manager("half_edge.get_percentile_edge_length"):
+        #with timing_manager("half_edge.get_percentile_edge_length"):
         lengths = []
         for edge_index in self:
             lengths.append(self.edge_len(edge_index))
         return np.percentile(lengths, percentile)
     
     def get_triangle_vertices_by_edge(self, h_index:int):
-      with timing_manager("half_edge.get_triangle_vertices_by_edge"):
+        #with timing_manager("half_edge.get_triangle_vertices_by_edge"):
         # returns (3,3) float64 of the triangle vertices that the half-edge belongs to
         f_index = self.half_edges[h_index].face
         t_verts_indices = self.F[f_index] # (3,) int32
@@ -281,11 +281,11 @@ class HalfEdgeTriMesh:
         return t_verts_positions
     
     def valence(self, h_index:int):
-      with timing_manager("half_edge.valence"):
+        #with timing_manager("half_edge.valence"):
         return len(list(self.one_ring(h_index)))
     
     def adjacent_half_edges(self, h_index:int):
-      with timing_manager("half_edge.adjacent_half_edges"):
+        #with timing_manager("half_edge.adjacent_half_edges"):
         nh_index = self.half_edges[h_index].next # h1
         nnh_index = self.half_edges[nh_index].next # h2
         th_index = self.half_edges[h_index].twin # h3
@@ -294,7 +294,7 @@ class HalfEdgeTriMesh:
         return nh_index, nnh_index, nth_index, nnth_index # h1, h2, h4, h5
     
     def adjacent_triangles(self, h_index: int):
-      with timing_manager("half_edge.adjacent_triangles"):
+        #with timing_manager("half_edge.adjacent_triangles"):
         f0_index = self.half_edges[h_index].face
         th_index = self.half_edges[h_index].twin
         f1_index = self.half_edges[th_index].face
@@ -302,23 +302,23 @@ class HalfEdgeTriMesh:
     
     # set vertices and triangles methods
     def replace_triangle_by_index(self, t_index: int, new_t_verts_indices: np.ndarray): # new_t_verts_indices is (3,) int32
-      with timing_manager("half_edge.replace_triangle_by_index"):
+        #with timing_manager("half_edge.replace_triangle_by_index"):
         self.F[t_index] = new_t_verts_indices
     
     def update_triangle_by_vertex_indices(self, h_index:int, v_index_new:int, v_index_old:int):
-      with timing_manager("half_edge.update_triangle_by_vertex_indices"):
+        #with timing_manager("half_edge.update_triangle_by_vertex_indices"):
         t_index = self.half_edges[h_index].face
         t_verts_indices = self.F[t_index] #(3,) int32
         t_verts_indices[t_verts_indices==v_index_old] = v_index_new
         self.replace_triangle_by_index(t_index, t_verts_indices)
     
     def normal(self, h_index: int, normalize:bool=True) :
-      with timing_manager("half_edge.normal"):
-        return get_normal(self.get_triangle_vertices_by_edge(h_index),normalize=normalize)
+        #with timing_manager("half_edge.normal"):
+        return get_normal(self.get_triangle_vertices_by_edge(h_index), normalize=normalize)
     
     ############ RING METHODS ############
     def get_next_index_on_ring(self, h_index:int, clockwise:bool):
-      with timing_manager("half_edge.get_next_index_on_ring"):
+        #with timing_manager("half_edge.get_next_index_on_ring"):
         if clockwise:
             th_index = self.half_edges[h_index].twin
             return self.half_edges[th_index].next
@@ -329,7 +329,7 @@ class HalfEdgeTriMesh:
     
     ### INDEX RING METHODS ###
     def one_ring(self, h_index:int, clockwise:bool=True):
-      with timing_manager("half_edge.one_ring"):
+        #with timing_manager("half_edge.one_ring"):
         # return half-edges whose source-vertex is like h_index's. returns in clockwise manner
         last = h_index
         while True:
@@ -340,7 +340,7 @@ class HalfEdgeTriMesh:
             h_index = nh_index 
         
     def vertex_index_ring(self, h_index:int):
-      with timing_manager("half_edge.vertex_index_ring"):
+        #with timing_manager("half_edge.vertex_index_ring"):
         # for h_index one ring, return list of the half-edges' target vertices indices
         # i.e. a list of ints
         # assume h_index is a half-edge with source vertex v0
@@ -349,35 +349,35 @@ class HalfEdgeTriMesh:
     
     ### POSITION RING METHODS ###
     def edge_ring(self, h_index:int):
-      with timing_manager("half_edge.edge_ring"):
+        #with timing_manager("half_edge.edge_ring"):
         # for h_index one_ring edges, returns a list of their vertices (instead of indices)
         # i.e. a list of  np.array (2,3) float64
         v0_one_ring = self.one_ring(h_index) # assume h_index is a half-edge with source vertex v0
         return [self.get_vertices_by_edge(h_index) for h_index in v0_one_ring]
     
     def vertex_ring(self, h_index:int):
-      with timing_manager("half_edge.vertex_ring"):
+        #with timing_manager("half_edge.vertex_ring"):
         # for h_index edge ring, returns a list of the target vertices positions,
         # i.e. a list of (3,) float64
         v0_edge_ring = self.edge_ring(h_index) # list of (2,3) float64, assume h_index is a half-edge with source vertex v0
         return [edge[1] for edge in v0_edge_ring]
     
     def triangle_ring(self, h_index:int):
-      with timing_manager("half_edge.triangle_ring"):
+        #with timing_manager("half_edge.triangle_ring"):
         # for h_index one_ring edges, returns their triangles (instead of indices)
         # i.e. a list of  np.array (3,3) float64
         v0_one_ring = self.one_ring(h_index) # assume h_index is a half-edge with source vertex v0
         return [self.get_triangle_vertices_by_edge(h_index) for h_index in v0_one_ring]
     
     def normal_ring(self, h_index:int, normalize:bool=True):
-      with timing_manager("half_edge.normal_ring"):
+        #with timing_manager("half_edge.normal_ring"):
         # for h_index triangle_ring, returns their triangles normals
         # i.e. a list of (3,) float64
         v0_triangle_ring = self.triangle_ring(h_index) # list of (3,3) float64, assume h_index is a half-edge with source vertex v0
         return [get_normal(triangle, normalize=normalize) for triangle in v0_triangle_ring]
     
     def gravity_ring(self, h_index:int):
-      with timing_manager("half_edge.gravity_ring"):
+        #with timing_manager("half_edge.gravity_ring"):
         vertex_ring = [] # list of (n,3)
         weighted_normal_ring = [] # list (n,3), each normal of triangle weighted by twice triangle area
         v0_one_ring = self.one_ring(h_index) 
@@ -389,7 +389,7 @@ class HalfEdgeTriMesh:
         return vertex_ring, weighted_normal_ring
     
     def compactness_ring(self, h_index:int):
-      with timing_manager("half_edge.compactness_ring"):
+        #with timing_manager("half_edge.compactness_ring"):
         # for h_index triangle ring, how much each triangle is close to an equilateral triangle
         # i.e. a list of float64
         v0_triangle_ring = self.triangle_ring(h_index)
@@ -398,7 +398,7 @@ class HalfEdgeTriMesh:
     ############ half-edge modifying operations ############
     
     def edge_split(self, h0_index:int):
-      with timing_manager("half_edge.edge_split"):
+        #with timing_manager("half_edge.edge_split"):
         h0_twin_index = self.half_edges[h0_index].twin
         
         is_h0_bdry = self.half_edges[h0_index].face == -1 or self.half_edges[h0_twin_index].face == -1
@@ -569,7 +569,7 @@ class HalfEdgeTriMesh:
         self.unreferenced_faces.update({t0_index, t1_index})
       
     def edge_split_boundary(self, h0_index:int):
-      with timing_manager("half_edge.edge_split_boundary"):
+        #with timing_manager("half_edge.edge_split_boundary"):
         h0 = self.half_edges[h0_index]
         h3 = self.half_edges[h0.twin]
         is_h0_bdry = h0.face == -1 or h3.face == -1
@@ -699,7 +699,7 @@ class HalfEdgeTriMesh:
                 he_twin.next = h11_index
 
     def edge_flip(self, h0_index:int):
-      with timing_manager("half_edge.edge_flip"):
+        #with timing_manager("half_edge.edge_flip"):
         he0 = self.half_edges[h0_index]
         if he0.target_bdry and not he0.source_bdry: # preference
             return self.edge_flip(h0_index=he0.twin)
@@ -741,7 +741,7 @@ class HalfEdgeTriMesh:
         self.replace_triangle_by_index(t1_index, np.array([v0_index, v1_index, v3_index]))
     
     def edge_collapse(self, h0_index: int) -> list:    
-      with timing_manager("half_edge.edge_collapse"):
+        #with timing_manager("half_edge.edge_collapse"):
         he0 = self.half_edges[h0_index]
         assert not (he0.source_bdry and he0.target_bdry), f"edge_collapse({he0}) called but has both source and target vertices on boundary"
         if he0.target_bdry:
@@ -815,7 +815,7 @@ class HalfEdgeTriMesh:
         return p_ring 
     
     def revert_edge_collapse(self, p_ring:list):
-      with timing_manager("half_edge.revert_edge_collapse"):
+        #with timing_manager("half_edge.revert_edge_collapse"):
         # p_ring contains all half edges that have v1 as source, except h1 and h3
         # get data
         h0_index, h1_index, h2_index, h3_index, h4_index, h5_index, t0_index, t1_index, v1_index = self.last_collapse

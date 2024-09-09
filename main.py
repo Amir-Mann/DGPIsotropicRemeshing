@@ -27,14 +27,14 @@ class IsotropicRemesher:
         self.model.visualize(*args, **kwargs)
     
     def has_foldover_triangles(self, normals_pre, normals_pos, threshold=np.pi/6):
-      with timing_manager("main.has_foldover_triangles"):
+        #with timing_manager("main.has_foldover_triangles"):
         for normals in zip(normals_pre, normals_pos):
             if angle(normals) > threshold:
                 return True
         return False
 
     def has_collinear_edges(self, h0_index: int):
-      with timing_manager("main.has_collinear_edges"):
+        #with timing_manager("main.has_collinear_edges"):
         _, h2_index, _, h5_index = self.model.adjacent_half_edges(h0_index) # h1, h2, h4, h5
 
         v2_index, v0_index = self.half_edges[h2_index].vertex_indices
@@ -50,7 +50,7 @@ class IsotropicRemesher:
         return False
     
     def has_small_edges(self, h_index:int, L_high:float):
-      with timing_manager("main.has_small_edges"):
+        #with timing_manager("main.has_small_edges"):
         # check that new edges are smaller than high.
         # if this is true than we don't collapse edge
         v0_index = self.half_edges[h_index].vertex_indices[0]
@@ -66,14 +66,14 @@ class IsotropicRemesher:
         return True 
 
     def has_collapse_connectivity(self, h_index:int):
-      with timing_manager("main.has_collapse_connectivity"):
+        #with timing_manager("main.has_collapse_connectivity"):
         v0_ring = set(self.model.vertex_index_ring(h_index))
         th_index = self.half_edges[h_index].twin
         v1_ring = set(self.model.vertex_index_ring(th_index))
         return len(v0_ring.intersection(v1_ring)) == 2
 
     def has_flip_connectivity(self, h0_index: int):
-      with timing_manager("main.has_flip_connectivity"):
+        #with timing_manager("main.has_flip_connectivity"):
         h0_valence = self.model.valence(h0_index)
         if  h0_valence == 3:
             return False
@@ -87,7 +87,7 @@ class IsotropicRemesher:
         return True
 
     def split_long_edges(self, threshold: float):
-      with timing_manager("main.split_long_edges"):
+        #with timing_manager("main.split_long_edges"):
         
         n = 0
         E = len(self.model.half_edges)
@@ -107,18 +107,11 @@ class IsotropicRemesher:
         return n 
 
     def collapse_short_edges(self, L_low, L_high, foldover:float=0):
-      with timing_manager("main.collapse_short_edges"):
+        #with timing_manager("main.collapse_short_edges"):
         n = 0
         E = len(self.model.half_edges)
 
         for h0_index in range(E):
-
-            # skip if twin already tested
-
-            h3_index = self.half_edges[h0_index].twin
-
-            if h0_index > h3_index:
-               continue
 
             if h0_index in self.model.unreferenced_half_edges:
                 continue
@@ -132,6 +125,8 @@ class IsotropicRemesher:
             # https://stackoverflow.com/questions/27049163/mesh-simplification-edge-collapse-conditions
             if not self.has_collapse_connectivity(h0_index):
                 continue
+            
+            h3_index = self.half_edges[h0_index].twin
 
             # Compute normals before collapse  # TODO
             if foldover > 0: normals_pre = list(self.model.normal_ring(h3_index))[1:-1] # exclude f0 and f1
@@ -154,24 +149,22 @@ class IsotropicRemesher:
         return n
 
     def equalize_valences(self, sliver:bool=False, foldover:float=0):
-      with timing_manager("main.equalize_valences"):
+        #with timing_manager("main.equalize_valences"):
 
         n = 0
         E = len(self.half_edges)
 
         for h0_index in range(E):
+ 
+            if h0_index in self.model.unreferenced_half_edges:
+                continue
+
             # skip if twin already tested
             h3_index = self.half_edges[h0_index].twin
 
             if h0_index > h3_index:
                 continue
 
-            h2_index = self.half_edges[self.half_edges[h0_index].next].next
-            h5_index = self.half_edges[self.half_edges[h3_index].next].next
-                        
-            if h0_index in self.model.unreferenced_half_edges:
-                continue
-            
             he0 = self.model.half_edges[h0_index]
             # if boundary edge
             if he0.face==-1 or self.model.half_edges[h3_index].face==-1:
@@ -182,6 +175,10 @@ class IsotropicRemesher:
             if self.has_collinear_edges(h0_index):
                 continue 
             
+            
+            h2_index = self.half_edges[self.half_edges[h0_index].next].next
+            h5_index = self.half_edges[self.half_edges[h3_index].next].next
+
             deviation_gap = self.model.valence(h0_index) + self.model.valence(h3_index) - self.model.valence(h2_index) - self.model.valence(h5_index)
             if deviation_gap < 2:
                 continue
@@ -212,7 +209,7 @@ class IsotropicRemesher:
         return n
 
     def vertex_relocation(self, iter: int, num_iters: int):
-      with timing_manager("main.vertex_relocation"):
+        #with timing_manager("main.vertex_relocation"):
         E = len(self.model.half_edges)
         skip = set()
         # lambda_ = 1.0 if iter < num_iters/2 else 0.75
@@ -239,7 +236,7 @@ class IsotropicRemesher:
         # return new_vertices
 
     def isotropic_remeshing(self, L:float, num_iters:int=20, foldover:float=0, sliver:bool=False):
-      with timing_manager("main.isotropic_remeshing"):
+        #with timing_manager("main.isotropic_remeshing"):
         start = time.time()
         L_low, L_high = 4/5.*L, 4/3.*L
         for iter in range(num_iters): 
@@ -267,7 +264,7 @@ class IsotropicRemesher:
         print(f"Isotropic remeshing took {minute:.0f} min {sec:.2f} sec")
 
     def tangential_smoothing(self, h_index, lambda_:float):
-      with timing_manager("main.tangential_smoothing"):
+        #with timing_manager("main.tangential_smoothing"):
         he0 = self.model.half_edges[h_index]
         if he0.source_bdry:
             return
@@ -294,11 +291,11 @@ class IsotropicRemesher:
         
 
     def compactness_deviation(self, h_index:int):
-      with timing_manager("main.compactness_deviation"):
+        #with timing_manager("main.compactness_deviation"):
         return sum([1.-np.mean(list(self.model.compactness_ring(i))) for i in self.model.adjacent_half_edges(h_index)])
 
     def valence_deviation(self, h_index:int):
-      with timing_manager("main.valence_deviation"):
+        #with timing_manager("main.valence_deviation"):
         h1_idx, h2_idx, h4_idx, h5_idx = self.model.adjacent_half_edges(h_index)
         h1_valence = self.model.valence(h1_idx)
         h2_valence = self.model.valence(h2_idx)
@@ -348,7 +345,7 @@ def main():
         remesher.isotropic_remeshing(L=L, num_iters=args.num_iters, foldover=args.foldover, sliver=not args.no_sliver)
     
     # Print time statistics
-    print_time_statistics(verbose=args.verbose_timing)
+    #print_time_statistics(verbose=args.verbose_timing)
 
     # Save stats after remeshing if flag is enabled
     if args.save_stats:
