@@ -27,7 +27,7 @@ def face_area_stats(he_trimesh:HalfEdgeTriMesh):
     relative_mean_area_error = avg_diff / avg_prod_norms
     return face_area_std, relative_mean_area_error
 
-def save_stats(he_trimesh, prefix, rewrite=True,extra=""):
+def save_stats(he_trimesh, prefix, rewrite=True, extra=""):
     std_edge_len = std_deviation_edge_len(he_trimesh)
     std_area, relative_mean_area_error = face_area_stats(he_trimesh)
     stats_str = f"{prefix}\nstd. deviation edge len: {std_edge_len:.2f}, std. deviation face area: {std_area:.2f}, relative mean area error: {relative_mean_area_error:.2f}\n"

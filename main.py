@@ -6,7 +6,6 @@ from HalfEdge.half_edge import HalfEdgeTriMesh
 from HalfEdge.utils_math import angle, is_collinear
 from HalfEdge.utils_time import print_time_statistics, timing_manager, time_without_stack
 import HalfEdge.utils_he as utils_he
-import threading
 
 class IsotropicRemesher:
     def __init__(self, model: HalfEdgeTriMesh):
@@ -44,7 +43,6 @@ class IsotropicRemesher:
         vertices = self.V[[v1_index, v2_index, v3_index]]
         if is_collinear(vertices): 
             return True
-        he0 = self.half_edges[h0_index] # todo debug
         vertices2 = self.V[[v0_index, v2_index, v3_index]]
         if is_collinear(vertices2): 
             return True
@@ -102,7 +100,6 @@ class IsotropicRemesher:
             h0_edge_len = self.model.edge_len(h0_index)
             if  h0_edge_len <= threshold:
                 continue
-            he0_index = self.model.half_edges[h0_index]
             self.model.edge_split(h0_index)
 
             n += 1
@@ -113,7 +110,6 @@ class IsotropicRemesher:
       with timing_manager("main.collapse_short_edges"):
         n = 0
         E = len(self.model.half_edges)
-        skip = []
 
         for h0_index in range(E):
 
@@ -121,16 +117,12 @@ class IsotropicRemesher:
 
             h3_index = self.half_edges[h0_index].twin
 
-            if h3_index in skip:
+            if h0_index > h3_index:
                 continue
-            
-            skip.append(h3_index)
 
             if h0_index in self.model.unreferenced_half_edges:
                 continue
     
-
-            h0_edge_len = self.model.edge_len(h0_index) # TODO debug
             if self.model.edge_len(h0_index) >= L_low:
                 continue
 
@@ -166,16 +158,16 @@ class IsotropicRemesher:
 
         n = 0
         E = len(self.half_edges)
-        skip = []
 
         for h0_index in range(E):
             # skip if twin already tested
             h3_index = self.half_edges[h0_index].twin
 
-            if h3_index in skip:
+            if h0_index > h3_index:
                 continue
-            
-            skip.append(h3_index)
+
+            h2_index = self.half_edges[self.half_edges[h0_index].next].next
+            h5_index = self.half_edges[self.half_edges[h3_index].next].next
                         
             if h0_index in self.model.unreferenced_half_edges:
                 continue
@@ -196,11 +188,10 @@ class IsotropicRemesher:
 
             if sliver: deviation_compactness_pre = self.compactness_deviation(h0_index)
 
-            deviation_valence_pre = self.valence_deviation(h0_index)
+            deviation_gap = self.model.valence(h0_index) + self.model.valence(h3_index) - self.model.valence(h2_index) - self.model.valence(h5_index)
+            if deviation_gap < 2:
+               continue
 
-            is_he0_bdry = he0.face == -1 or self.model.half_edges[h3_index].face == -1
-            if is_he0_bdry:
-                continue
             self.model.edge_flip(h0_index)
             
             if foldover > 0:
@@ -209,14 +200,6 @@ class IsotropicRemesher:
                 if self.has_foldover_triangles(normals_pre, normals_pos, threshold=foldover):
                     self.model.edge_flip(h0_index)
                     continue
-
-            deviation_valence_pos = self.valence_deviation(h0_index)
-
-            if deviation_valence_pre < deviation_valence_pos:
-                self.model.edge_flip(h0_index)
-                continue
-            # if (deviation_valence_pos < deviation_valence_pre):
-                # print(f"flip of edge {h0_index} was successful")
             
             if sliver:
                 deviation_compactness_pos = self.compactness_deviation(h0_index)
@@ -232,7 +215,7 @@ class IsotropicRemesher:
     def vertex_relocation(self, iter: int, num_iters: int):
       with timing_manager("main.vertex_relocation"):
         E = len(self.model.half_edges)
-        skip = []
+        skip = set()
         # lambda_ = 1.0 if iter < num_iters/2 else 0.75
         lambda_ = 0.85
         # if iter > 2*num_iters/3:
@@ -254,7 +237,7 @@ class IsotropicRemesher:
             
             self.tangential_smoothing(h_index, lambda_)
             
-            skip.append(v_index)
+            skip.add(v_index)
 
         # return new_vertices
 
@@ -341,6 +324,7 @@ def main():
     parser.add_argument("--save_stats", action='store_true', help="Save statistics before and after remeshing.")
     parser.add_argument("--visualize", action='store_true', help="Visualize the mesh after remeshing.")
     parser.add_argument("--save_to_obj", action='store_true', help="Save remeshed model to .obj format.")
+    parser.add_argument("--verbose_timing", action='store_true', help="Prints extra infomation in timing methods.")
 
     # Parse arguments
     args = parser.parse_args()
@@ -358,7 +342,7 @@ def main():
     # Save stats before remeshing if flag is enabled
     if args.save_stats:
         # Uncomment when save_stats function is available
-        # save_stats(he_trimesh, prefix="before", rewrite=True, extra=run_stats)
+        utils_he.save_stats(he_trimesh, prefix="before", rewrite=True, extra=run_stats)
         print(f"Saving stats before remeshing: {run_stats}")
 
     # Remeshing process
@@ -369,11 +353,11 @@ def main():
     # Save stats after remeshing if flag is enabled
     if args.save_stats:
         # Uncomment when save_stats function is available
-        # save_stats(he_trimesh, prefix=f"after {args.num_iters} iters", rewrite=False)
+        utils_he.save_stats(he_trimesh, prefix=f"after {args.num_iters} iters", rewrite=False)
         print(f"Saving stats after {args.num_iters} iterations of remeshing.")
 
     # Print time statistics
-    print_time_statistics()
+    print_time_statistics(verbose=args.verbose_timing)
 
     # Visualize if flag is enabled
     if args.visualize:

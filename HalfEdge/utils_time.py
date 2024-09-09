@@ -11,31 +11,31 @@ _global_times_dict = {
 }
 _global_timing_keys = []
 
-def print_time_statistics(verbos=True):
+def print_time_statistics(verbose=True):
     global _global_timing_stack
     global _global_times_dict
     global _global_timing_keys
-    if verbos:
+    if verbose:
         print(json.dumps(_global_times_dict))
     print("\n\n\n")
     if len(_global_timing_stack) != 0:
         print(f"Warning: bug in the timing utils, the stack at statistics printing time {time.time()}:\n" + str(_global_timing_stack))
     
     max_key_length = max(map(len, _global_timing_keys))
-    print(" " * (max_key_length - len("func / stat")) + " func / stat | runtime(ms) | enters  | average runtime (ms)")
+    print(" " * (max_key_length - len("func / stat")) + " func / stat | runtime(sc) | enters  | average runtime (ms)")
     sum_runtime = 0
     short_runtimes = []
     for key in sorted(_global_timing_keys):
-        runtime = _global_times_dict["sums"][key] * 1000
+        runtime = _global_times_dict["sums"][key]
         count = _global_times_dict["counts"][key]
-        avg = runtime / count
-        sum_runtime += runtime / 1000
-        if runtime < 100:
+        avg = runtime / count * 1000
+        sum_runtime += runtime
+        if runtime < 0.1:
             short_runtimes.append(key)
             continue
         print(f"{key}:" + " " * (max_key_length - len(key)) + f" | {runtime:11.2f} | {count:7.0f} | {avg:9.4f}")
     print(f"{sum_runtime=}")
-    if verbos:
+    if verbose:
         print(f"{short_runtimes=}")
 
 def start_timing(key):
