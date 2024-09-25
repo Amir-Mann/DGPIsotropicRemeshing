@@ -1,4 +1,7 @@
-# Running Python remeshing project
+# Remeshing
+Implementation of Leif and Kobbelt's ["A Remeshing Approach to Multiresolution Modeling"](https://www.graphics.rwth-aachen.de/media/papers/remeshing1.pdf) by Amir Mann and Ehud Gordon. 
+![Remeshing of max placnk](fig/max_planck.png)
+## Running Python Code
 The code was tested both on an Ubuntu and Window OS. The commands below are for Unix systems. Adjust the instructions for different operating systems.   
 1. Navigate to the Project Directory: Change to the project directory where `main.py` is located:  
 ``` bash
