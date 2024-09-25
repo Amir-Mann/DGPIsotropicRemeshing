@@ -359,7 +359,7 @@ def main():
 
     # Save to .obj if flag is enabled
     if args.save_to_obj:
-        remesher.model.save_to_obj(open_in_meshlab=True)
+        remesher.model.save_to_obj(open_in_meshlab=False)
 
 if __name__ == "__main__":
     main()

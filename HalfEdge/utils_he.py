@@ -17,13 +17,13 @@ def face_area_stats(he_trimesh:HalfEdgeTriMesh):
         if face_index in he_trimesh.unreferenced_faces:
             continue
         vertices = he_trimesh.V[face_verts_inds]
-        cross_product_norms.append(utils_math.get_cross_product_norm(vertices))
+        cross_product_norms.append(utils_math.get_cross_product_norm(vertices) / 2)
     face_area_std = np.std(cross_product_norms)
     # compute relative mean area error
     avg_prod_norms = np.mean(cross_product_norms)
     diff_vals = np.abs(cross_product_norms - avg_prod_norms)
     # find argmax
-    avg_diff = np.mean(diff_vals)
+    avg_diff  = np.mean(diff_vals)
     relative_mean_area_error = avg_diff / avg_prod_norms
     return face_area_std, relative_mean_area_error
 

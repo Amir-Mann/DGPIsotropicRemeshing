@@ -93,7 +93,7 @@ def save_to_obj(he_trimesh):
     V = he_trimesh.V
     F = he_trimesh.F
     # Filter out unreferenced faces
-    referenced_faces = np.delete(F, he_trimesh.unreferenced_faces, axis=0)
+    referenced_faces = np.delete(F, list(he_trimesh.unreferenced_faces), axis=0)
     out_path = os.path.join(OUT_DIR, he_trimesh.model_name + '.obj')
     with open(out_path, 'w') as obj_file:
         # Write vertices
